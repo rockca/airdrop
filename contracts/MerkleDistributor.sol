@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.5.8;
+pragma solidity 0.8.0;
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./IToken.sol";
 
 // File: MerkleDistributor.sol
 
 // MerkleDistributor for airdrop to BTFS staker
 contract MerkleDistributor {
+
+    using SafeMath for uint256;
 
     bytes32[] public merkleRoots;
     bytes32 public pendingMerkleRoot;
@@ -38,10 +41,10 @@ contract MerkleDistributor {
     // This is a packed array of booleans.
     mapping(uint256 => mapping(uint256 => uint256)) private claimedBitMap;
 
-    constructor(address _proposalAuthority, address _reviewAuthority, address token) public {
+    constructor(address _proposalAuthority, address _reviewAuthority, address _token) public {
         proposalAuthority = _proposalAuthority;
         reviewAuthority = _reviewAuthority;
-        tokenAddress = token;
+        tokenAddress = _token;
         owner = msg.sender;
     }
 
@@ -71,17 +74,13 @@ contract MerkleDistributor {
 
     // set the total amount of airdrop this period
     function setTotalAmount(uint256 totalAmount) external onlyOwner {
-        statistics record;
-        record.total = totalAmount;
-        record.claimed = 0;
-        claimInfo.push(record);
+        claimInfo.push(statistics(totalAmount, 0));
     }
 
     // Each week, the proposal authority calls to submit the merkle root for a new airdrop.
     function proposewMerkleRoot(bytes32 _merkleRoot) public {
         require(msg.sender == proposalAuthority);
         require(pendingMerkleRoot == 0x00);
-        require(merkleRoots.length < 52);
         require(block.timestamp > lastRoot + 604800);
         pendingMerkleRoot = _merkleRoot;
     }
