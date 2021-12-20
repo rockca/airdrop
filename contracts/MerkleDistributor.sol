@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 
 pragma solidity 0.5.8;
-import "./IDistributor.sol";
+import "./IToken.sol";
 
 // File: MerkleDistributor.sol
 
@@ -16,6 +16,17 @@ contract MerkleDistributor {
     address public proposalAuthority;
     // admin address which approves or rejects a proposed merkle root
     address public reviewAuthority;
+    // the address of airdrop token
+    address public tokenAddress;
+    address public owner;
+
+    struct statistics {
+        uint256 total;
+        uint256 claimed;
+    }
+
+    // Record the claim information of each period
+    statistics[] public claimInfo;
 
     event Claimed(
         uint256 merkleIndex,
@@ -26,16 +37,26 @@ contract MerkleDistributor {
 
     // This is a packed array of booleans.
     mapping(uint256 => mapping(uint256 => uint256)) private claimedBitMap;
-    address public rewardMinter;
 
-    constructor(address _proposalAuthority, address _reviewAuthority) public {
+    constructor(address _proposalAuthority, address _reviewAuthority, address token) public {
         proposalAuthority = _proposalAuthority;
         reviewAuthority = _reviewAuthority;
+        tokenAddress = token;
+        owner = msg.sender;
     }
 
-    function setMinter(address _rewardMinter) public {
-        require(rewardMinter == address(0));
-        rewardMinter = _rewardMinter;
+    modifier onlyOwner() {
+        require(owner == msg.sender, "only owner");
+        _;
+    }
+
+    function upgradeOwner(address newOwner) external onlyOwner {
+      require(newOwner != owner && newOwner != address(0), "invalid newOwner");
+      owner = newOwner;
+    }
+
+    function setToken(address _token) external onlyOwner {
+        tokenAddress = _token;
     }
 
     function setProposalAuthority(address _account) public {
@@ -46,6 +67,14 @@ contract MerkleDistributor {
     function setReviewAuthority(address _account) public {
         require(msg.sender == reviewAuthority);
         reviewAuthority = _account;
+    }
+
+    // set the total amount of airdrop this period
+    function setTotalAmount(uint256 totalAmount) external onlyOwner {
+        statistics record;
+        record.total = totalAmount;
+        record.claimed = 0;
+        claimInfo.push(record);
     }
 
     // Each week, the proposal authority calls to submit the merkle root for a new airdrop.
@@ -93,7 +122,11 @@ contract MerkleDistributor {
 
         // Mark it claimed and send the token.
         _setClaimed(merkleIndex, index);
-        require(Distributor(rewardMinter).sendAirdrop(msg.sender, amount), "send airdrop error");
+
+        claimInfo[merkleIndex].claimed = claimInfo[merkleIndex].claimed.add(amount);
+
+        // transfer airdrop to msg.sender
+        require(Token(tokenAddress).transfer(msg.sender, amount), "send airdrop error");
 
         emit Claimed(merkleIndex, index, msg.sender, amount);
     }
