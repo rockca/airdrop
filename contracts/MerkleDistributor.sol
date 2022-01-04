@@ -247,11 +247,18 @@ contract MerkleDistributor {
 
     // Record the claim information of each period
     statistics[] public claimInfo;
+    // Record the total claim information of all period
+    statistics  public totalClaimInfo;
 
     event Claimed(
         uint256 merkleIndex,
         uint256 index,
         address account,
+        uint256 amount
+    );
+
+    event SetTotalAmount(
+        uint256 merkleIndex,
         uint256 amount
     );
 
@@ -291,14 +298,19 @@ contract MerkleDistributor {
 
     // set the total amount of airdrop this period
     function setTotalAmount(uint256 totalAmount) external onlyOwner {
+        // push the statistics
         claimInfo.push(statistics(totalAmount, 0));
+        // Accumulate the total info
+        totalClaimInfo.total = totalClaimInfo.total.add(totalAmount);
+
+        emit SetTotalAmount(claimInfo.length - 1, totalAmount);
     }
 
     // Each week, the proposal authority calls to submit the merkle root for a new airdrop.
     function proposewMerkleRoot(bytes32 _merkleRoot) public {
         require(msg.sender == proposalAuthority);
         require(pendingMerkleRoot == 0x00);
-        require(block.timestamp > lastRoot + 604800);
+        //require(block.timestamp > lastRoot + 604800);
         pendingMerkleRoot = _merkleRoot;
     }
 
@@ -339,7 +351,11 @@ contract MerkleDistributor {
         // Mark it claimed and send the token.
         _setClaimed(merkleIndex, index);
 
+        // Accumulate the claimInfo
         claimInfo[merkleIndex].claimed = claimInfo[merkleIndex].claimed.add(amount);
+
+        // Accumulate the total info
+        totalClaimInfo.claimed = totalClaimInfo.claimed.add(amount);
 
         // transfer airdrop to msg.sender
         require(Token(tokenAddress).transfer(msg.sender, amount), "send airdrop error");
