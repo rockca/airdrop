@@ -31,3 +31,5 @@ deploy contracts will generate one contract:MerkleDistributor
 3. call MerkleDistributor:setTotalAmount to set the total airdrop of this period
 4. transfer enough WBTT to MerkleDistributor for airdrop
 
+## NOTE
+if deploy airdrop contract to BTTC network, copy the code of contracts to Remix, deploy it with metamask
