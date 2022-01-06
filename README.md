@@ -23,11 +23,11 @@ tronbox migrate --network <network>
 
 ## Operation
 
-deploy contracts will generate two contracts:Distributor and MerkleDistributor
+deploy contracts will generate one contract:MerkleDistributor
 
-1. call Distributor:upgradeCaller(MerkleDistributor.address) to set the caller from Owner
-2. call MerkleDistributor:setMinter(Distributor.address) to set the minter from Owner
-3. call MerkleDistributor:proposewMerkleRoot(root) to propose pending root from proposalAuthority
-4. call MerkleDistributor:reviewPendingMerkleRoot(1) to review the pending root to root from reviewAuthority
-5. transfer enough BTT to Distributor for airdrop
+
+1. call MerkleDistributor:proposewMerkleRoot(root) to propose pending root from proposalAuthority
+2. call MerkleDistributor:reviewPendingMerkleRoot(1) to review the pending root to root from reviewAuthority
+3. call MerkleDistributor:setTotalAmount to set the total airdrop of this period
+4. transfer enough WBTT to MerkleDistributor for airdrop
 
